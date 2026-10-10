@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QSHIELD — The quantum security network</title>
+<meta name="description" content="Protect your crypto before quantum breaks it. Quantum exposure scores, post-quantum vaults and auto-migration for Solana.">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta property="og:title" content="QSHIELD — The quantum security network">
+<meta property="og:description" content="Protect your crypto before quantum breaks it. Get your free Quantum Exposure Score.">
+<meta property="og:image" content="/assets/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#000000">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Michroma&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#000000; --surface:#121212; --surface-2:#1b1b1b; --line:#2a2a2a; --line-2:#3a3a3a;
+  --tile-deep:#444444; --tile:#8a8a8a; --text:#f2f2f0; --muted:#9a9a96; --dim:#6a6a66;
+  --risk:#e5484d; --warn:#d9a441; --ok:#f2f2f0;
+  --sans:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --wide:"Michroma","Eurostile","Arial Black",var(--sans);
+  --r-s:8px; --r-m:14px; --r-l:22px;
+  color-scheme:dark;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#000000; --surface:#121212; --text:#f2f2f0; } }
+:root[data-theme="dark"]{ --bg:#000000; --surface:#121212; --text:#f2f2f0; }
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-behavior:smooth;scroll-padding-top:calc(env(safe-area-inset-top,0px) + 80px);background:var(--bg)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(circle,rgba(255,255,255,.075) 1px,transparent 1.3px);background-size:6px 6px;
+  -webkit-mask-image:radial-gradient(60% 50% at 20% 20%,#000 0%,transparent 70%),radial-gradient(55% 60% at 85% 65%,#000 0%,transparent 75%),radial-gradient(40% 40% at 50% 100%,#000 0%,transparent 70%);
+  mask-image:radial-gradient(60% 50% at 20% 20%,#000 0%,transparent 70%),radial-gradient(55% 60% at 85% 65%,#000 0%,transparent 75%),radial-gradient(40% 40% at 50% 100%,#000 0%,transparent 70%)}
+main,header,footer{position:relative;z-index:1}
+img{max-width:100%}
+a{color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--text);outline-offset:3px;border-radius:4px}
+.wrap{width:min(1240px,100% - 40px);margin-inline:auto}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;background:rgba(0,0,0,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .2s}
+.nav.scrolled{border-bottom-color:var(--line)}
+.nav .wrap{width:100%;max-width:none;padding:0 clamp(16px,3vw,40px);display:flex;align-items:center;gap:28px;height:68px}
+.nav .brand,.nav .links,.nav .links a{line-height:1}
+.nav .links{align-items:center;height:100%}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand img{height:30px;width:auto}
+.brand span{font-family:var(--wide);font-size:15px;letter-spacing:.22em}
+.links{display:flex;gap:4px;margin-left:8px}
+.links a{text-decoration:none;color:var(--muted);font-size:15px;padding:8px 12px;border-radius:999px;transition:color .15s,background .15s}
+.links a:hover{color:var(--text);background:var(--surface)}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.chip{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:7px 12px;white-space:nowrap}
+.menu-btn{display:none;background:none;border:1px solid var(--line);border-radius:10px;width:42px;height:42px;cursor:pointer}
+@media (max-width:480px){#walletLabel.long{font-size:0}#walletLabel.long::after{content:"Connect";font-size:15px}.nav .wrap{gap:12px}}
+@media (max-width:1020px){.links{display:none}.menu-btn{display:grid;place-items:center}.chip{display:none}
+  .links.open{display:flex;flex-direction:column;position:absolute;top:68px;left:0;right:0;background:#000;border-bottom:1px solid var(--line);padding:12px 20px 20px}
+  .links.open a{padding:12px 4px;font-size:18px}}
+
+/* buttons */
+.btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:10px;height:50px;padding:0 24px;border-radius:12px;border:1px solid var(--line-2);background:transparent;color:var(--text);font-weight:500;font-size:16px;cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s,transform .1s}
+.btn:hover{border-color:#5a5a5a;background:var(--surface)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--text);color:#000;border-color:var(--text)}
+.btn.primary:hover{background:#fff}
+.btn.sm{height:42px;padding:0 16px;font-size:15px;border-radius:10px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.wallet-btn .dot{width:8px;height:8px;border-radius:50%;background:var(--text);box-shadow:0 0 10px rgba(255,255,255,.7)}
+
+/* hero */
+.hero{min-height:calc(100svh - 68px);display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:20px;padding:40px 0 60px}
+.hero h1{font-size:clamp(44px,6.6vw,96px);line-height:.92;letter-spacing:-.055em;font-weight:600;margin:0 0 28px}
+.hero h1 .line{display:block;overflow:hidden}
+.hero h1 .line span{display:block;transform:translateY(105%);animation:rise .9s cubic-bezier(.2,.8,.2,1) forwards}
+.hero h1 .line:nth-child(2) span{animation-delay:.08s}.hero h1 .line:nth-child(3) span{animation-delay:.16s}.hero h1 .line:nth-child(4) span{animation-delay:.24s}
+@keyframes rise{to{transform:none}}
+.hero p.lead{font-size:clamp(17px,1.5vw,20px);color:#c9c9c5;max-width:36ch;margin:0 0 34px}
+.cta-row{display:flex;flex-wrap:wrap;gap:12px}
+.stage{position:relative;aspect-ratio:1/1;width:100%;max-width:620px;justify-self:end}
+.stage canvas{width:100%;height:100%;display:block;-webkit-mask-image:linear-gradient(#000 78%,transparent 100%);mask-image:linear-gradient(#000 78%,transparent 100%);cursor:crosshair;touch-action:none}
+.stage .hint{position:absolute;bottom:2%;left:0;right:0;text-align:center;font-family:var(--mono);font-size:12px;color:var(--dim)}
+.hud{position:absolute;font-family:var(--mono);font-size:11px;line-height:1.7;color:var(--dim);pointer-events:none}
+.hud.l{left:0;top:16%}.hud.r{right:0;top:16%;text-align:right}
+@media (max-width:900px){.hero{grid-template-columns:1fr;min-height:auto;padding-top:28px}.stage{justify-self:center;max-width:480px;order:-1}.hud{display:none}}
+
+/* sections */
+section.block{padding:120px 0;border-top:1px solid var(--line)}
+.sec-head{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:end;margin-bottom:56px}
+.sec-head h2{font-size:clamp(36px,5vw,68px);line-height:.98;letter-spacing:-.045em;font-weight:600;margin:0}
+.sec-head p{color:var(--muted);margin:0;max-width:52ch}
+@media (max-width:800px){.sec-head{grid-template-columns:1fr;gap:18px}section.block{padding:84px 0}}
+
+/* threat */
+.threat{display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:center}
+.threat h2{font-size:clamp(40px,5.6vw,78px);line-height:.95;letter-spacing:-.05em;font-weight:600;margin:0 0 24px}
+.threat p{color:#c9c9c5;max-width:52ch}
+.keycard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:26px;font-family:var(--mono);font-size:14px}
+.keycard .row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.keycard .row:last-child{border-bottom:none}
+.keycard .k{color:var(--dim)}
+.keycard .big{font-size:34px;color:var(--text);font-family:var(--sans);letter-spacing:-.03em;padding:6px 0 14px}
+.tag{display:inline-block;font-size:12px;border:1px solid var(--line-2);border-radius:999px;padding:3px 10px;color:var(--muted)}
+.tag.risk{color:var(--risk);border-color:rgba(229,72,77,.45)}
+@media (max-width:900px){.threat{grid-template-columns:1fr}}
+
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);border-radius:var(--r-l);overflow:hidden}
+.step{padding:28px 24px 30px;border-right:1px solid var(--line);display:flex;flex-direction:column;gap:12px;min-height:300px;text-decoration:none;transition:background .2s}
+.step:last-child{border-right:none}
+.step:hover{background:var(--surface)}
+.step .n{font-family:var(--mono);font-size:13px;color:var(--dim)}
+.step h3{font-size:22px;letter-spacing:-.02em;margin:auto 0 0;font-weight:600}
+.step p{margin:0;color:var(--muted);font-size:15px}
+.step .glyph{width:44px;height:44px}
+@media (max-width:1020px){.steps{grid-template-columns:1fr 1fr}.step{border-bottom:1px solid var(--line);min-height:220px}.step:nth-child(2n){border-right:none}}
+@media (max-width:560px){.steps{grid-template-columns:1fr}.step{border-right:none}}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-l);padding:28px}
+.field{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.field label,.lbl{font-size:14px;color:var(--muted)}
+.input,select.input,textarea.input{width:100%;background:#000;border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:16px;outline:none;transition:border-color .15s}
+.input:focus{border-color:#6a6a6a}
+.input.mono{font-family:var(--mono);font-size:15px}
+textarea.input{min-height:96px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:600px){.grid2{grid-template-columns:1fr}}
+.choices{display:flex;flex-wrap:wrap;gap:8px}
+.choice{border:1px solid var(--line);background:#000;border-radius:10px;padding:10px 16px;cursor:pointer;font-size:15px}
+.choice[aria-pressed="true"]{background:var(--text);color:#000;border-color:var(--text)}
+.toggle{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-top:1px solid var(--line);cursor:pointer}
+.toggle input{appearance:none;width:42px;height:24px;border-radius:999px;background:#2a2a2a;position:relative;flex:none;cursor:pointer;margin-top:2px;transition:background .15s}
+.toggle input::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#777;transition:transform .15s,background .15s}
+.toggle input:checked{background:var(--text)}
+.toggle input:checked::after{transform:translateX(18px);background:#000}
+.toggle b{display:block;font-weight:500}
+.toggle small{color:var(--muted);font-size:14px}
+input[type=range]{width:100%;accent-color:#f2f2f0}
+.note{font-size:13px;color:var(--dim)}
+
+/* scanner */
+.scan-row{display:flex;gap:10px}
+.scan-row .input{flex:1}
+@media (max-width:600px){.scan-row{flex-direction:column}}
+.result{display:none;grid-template-columns:300px 1fr;gap:28px;margin-top:28px}
+.result.show{display:grid}
+@media (max-width:860px){.result{grid-template-columns:1fr}}
+.ring-box{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center}
+.ring{position:relative;width:220px;height:220px}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .val{position:absolute;inset:0;display:grid;place-items:center;font-size:64px;font-weight:600;letter-spacing:-.05em}
+.ring .val small{display:block;font-size:14px;color:var(--muted);letter-spacing:0;font-weight:400;margin-top:-6px}
+.band{font-size:15px;font-weight:500}
+.factors{display:flex;flex-direction:column}
+.factor{display:grid;grid-template-columns:1fr auto;gap:6px 16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.factor b{font-weight:500}
+.factor .pts{font-family:var(--mono);color:var(--muted)}
+.factor p{grid-column:1/-1;margin:0;color:var(--muted);font-size:14px}
+.bar{grid-column:1/-1;height:4px;background:#222;border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--text);width:0;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.mode{margin:6px 0 14px;font-size:13px;color:var(--muted)}
+.share-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+
+/* shield / wots */
+.split{display:grid;grid-template-columns:1fr 1.15fr;gap:28px;align-items:start}
+@media (max-width:960px){.split{grid-template-columns:1fr}}
+.prose p{color:#c9c9c5;max-width:54ch}
+.prose h3{font-size:24px;letter-spacing:-.02em;margin:32px 0 8px;font-weight:600}
+.chains{display:grid;grid-template-columns:repeat(67,1fr);gap:2px;height:120px;align-items:end;margin:18px 0}
+.chains i{display:block;background:var(--tile-deep);border-radius:2px;height:8%;transition:height .5s,background .3s}
+.chains i.lit{background:var(--text)}
+.wots-out{font-family:var(--mono);font-size:13px;color:var(--muted);overflow-wrap:anywhere;min-height:66px;background:#000;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.wots-out .ok{color:var(--text)}.wots-out .bad{color:var(--risk)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
+
+/* sentinel */
+.sentinel{display:grid;grid-template-columns:340px 1fr;gap:28px}
+@media (max-width:900px){.sentinel{grid-template-columns:1fr}}
+.levels{display:flex;flex-direction:column;gap:6px;margin-top:18px}
+.level{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);color:var(--dim)}
+.level i{width:10px;height:10px;border-radius:3px;background:#333}
+.level.on{color:var(--text);border-color:var(--line-2);background:var(--surface-2)}
+.level.on i{background:var(--text);box-shadow:0 0 12px rgba(255,255,255,.6)}
+.feed{display:flex;flex-direction:column}
+.signal{display:grid;grid-template-columns:110px 1fr auto;gap:18px;padding:20px 0;border-bottom:1px solid var(--line);align-items:start}
+.signal time{font-family:var(--mono);font-size:13px;color:var(--dim)}
+.signal h4{margin:0 0 4px;font-size:17px;font-weight:500}
+.signal p{margin:0;color:var(--muted);font-size:15px}
+.delta{font-family:var(--mono);font-size:13px;white-space:nowrap}
+.delta.up{color:var(--risk)}.delta.flat{color:var(--muted)}
+@media (max-width:600px){.signal{grid-template-columns:1fr}}
+
+/* policy */
+.policy-sum{font-size:20px;line-height:1.45;letter-spacing:-.01em;margin:0 0 20px}
+.policy-sum em{font-style:normal;border-bottom:1px solid var(--line-2)}
+
+/* launch */
+.launch{display:grid;grid-template-columns:1.15fr 1fr;gap:28px;align-items:start}
+@media (max-width:960px){.launch{grid-template-columns:1fr}}
+.drop{display:flex;align-items:center;gap:18px;border:1px dashed var(--line-2);border-radius:var(--r-m);padding:16px;cursor:pointer;margin-bottom:18px;background:#000}
+.drop .thumb{width:72px;height:72px;border-radius:12px;background:var(--surface-2);display:grid;place-items:center;overflow:hidden;flex:none}
+.drop .thumb img{width:100%;height:100%;object-fit:cover}
+.coin-card{position:sticky;top:96px}
+.coin-head{display:flex;align-items:center;gap:16px}
+.coin-head .thumb{width:64px;height:64px;border-radius:14px;background:var(--surface-2);overflow:hidden;display:grid;place-items:center;flex:none;font-size:24px;color:var(--dim)}
+.coin-head .thumb img{width:100%;height:100%;object-fit:cover}
+.coin-head h3{margin:0;font-size:22px;letter-spacing:-.02em}
+.coin-head .tick{font-family:var(--mono);color:var(--muted);font-size:14px}
+.mini-ring{margin-left:auto;width:64px;height:64px;position:relative;flex:none}
+.mini-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.mini-ring b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);font-size:16px}
+.ships{margin-top:22px}
+.ship{display:flex;gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+.ship .ic{width:34px;height:34px;border-radius:10px;border:1px solid var(--line-2);display:grid;place-items:center;flex:none;color:var(--dim)}
+.ship.on .ic{color:#000;background:var(--text);border-color:var(--text)}
+.ship b{display:block;font-weight:500}
+.ship small{color:var(--muted);font-size:14px}
+.hold{position:relative;overflow:hidden;width:100%;height:60px;border-radius:14px;border:1px solid var(--line-2);background:var(--surface-2);font-size:17px;font-weight:500;cursor:pointer;user-select:none;-webkit-user-select:none}
+.hold .fill{position:absolute;inset:0;background:var(--text);transform-origin:left;transform:scaleX(0)}
+.hold span{position:relative;mix-blend-mode:difference;color:#fff}
+.done{display:none;margin-top:16px}
+.done.show{display:block}
+
+/* audits */
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:900px){.tiers{grid-template-columns:1fr}}
+.tier{display:flex;flex-direction:column;gap:14px}
+.tier h3{margin:0;font-size:24px;letter-spacing:-.02em;font-weight:600}
+.tier .price{font-size:15px;color:var(--muted)}
+.tier ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;color:#c9c9c5;font-size:15px}
+.tier li{padding-left:22px;position:relative}
+.tier li::before{content:"";position:absolute;left:0;top:.55em;width:9px;height:9px;background:var(--tile);border-radius:2px}
+.tier .btn{margin-top:auto}
+.tier.feature{border-color:#4a4a4a;background:linear-gradient(180deg,#1a1a1a,#121212)}
+.report{margin-top:16px;font-family:var(--mono);font-size:13px;color:var(--muted);display:grid;grid-template-columns:auto 1fr;gap:6px 18px}
+.report dt{color:var(--dim)}.report dd{margin:0;word-break:break-all}
+
+/* token */
+.token{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+@media (max-width:960px){.token{grid-template-columns:1fr}}
+.wheel{width:100%;max-width:560px;aspect-ratio:1;justify-self:center}
+.wheel text{font-family:var(--sans);fill:var(--muted);font-size:13px}
+.wheel .node rect{fill:#1b1b1b;stroke:#3a3a3a;transition:fill .4s,stroke .4s}
+.wheel .node.on rect{fill:#f2f2f0;stroke:#f2f2f0}
+.wheel .node.on text.num{fill:#000}
+.wheel .node text.num{font-family:var(--mono);font-size:12px;fill:var(--muted)}
+.wheel .node.on text.lab{fill:var(--text)}
+.wheel-list{list-style:none;padding:0;margin:0;counter-reset:w}
+.wheel-list li{counter-increment:w;display:flex;gap:16px;padding:14px 0;border-bottom:1px solid var(--line);color:var(--muted);transition:color .3s}
+.wheel-list li::before{content:counter(w);font-family:var(--mono);font-size:13px;color:var(--dim);width:18px;padding-top:3px}
+.wheel-list li.on{color:var(--text)}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:64px}
+@media (max-width:760px){.compare{grid-template-columns:1fr}}
+.compare h3{margin:0 0 10px;font-size:20px;font-weight:600;letter-spacing:-.02em}
+.compare p{margin:0;color:var(--muted)}
+
+/* closing */
+.closing{text-align:center;padding:140px 0}
+.closing img{width:84px;margin-bottom:28px}
+.closing h2{font-family:var(--wide);font-size:clamp(30px,6vw,76px);letter-spacing:.12em;font-weight:400;margin:0 0 14px}
+.closing p{color:var(--muted);margin:0 auto 34px;max-width:46ch}
+footer{border-top:1px solid var(--line);padding:36px 0 48px;color:var(--dim);font-size:14px}
+footer .wrap{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}
+footer p{margin:0;max-width:70ch}
+
+/* modal & toast */
+.modal{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);padding:20px}
+.modal.open{display:grid}
+.sheet{width:min(420px,100%);background:#111;border:1px solid var(--line-2);border-radius:var(--r-l);padding:24px}
+.sheet h3{margin:0 0 4px;font-size:22px;letter-spacing:-.02em}
+.sheet > p{margin:0 0 18px;color:var(--muted);font-size:15px}
+.wl{display:flex;flex-direction:column;gap:8px}
+.wl button{display:flex;align-items:center;gap:14px;width:100%;padding:14px 16px;background:#000;border:1px solid var(--line);border-radius:14px;cursor:pointer;text-align:left;font-size:16px}
+.wl button:hover{border-color:#5a5a5a}
+.wl .wi{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;font-weight:700;font-size:14px;color:#000}
+.wl small{margin-left:auto;font-size:13px;color:var(--muted)}
+.wl small.det{color:var(--text)}
+.close-x{float:right;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
+.acct{position:absolute;right:0;top:52px;background:#111;border:1px solid var(--line-2);border-radius:14px;padding:8px;min-width:220px;display:none}
+.acct.open{display:block}
+.acct button{display:block;width:100%;text-align:left;background:none;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:15px}
+.acct button:hover{background:var(--surface-2)}
+.acct .addr{font-family:var(--mono);font-size:13px;color:var(--muted);padding:8px 12px 10px;border-bottom:1px solid var(--line);margin-bottom:6px;word-break:break-all}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--text);color:#000;padding:12px 18px;border-radius:12px;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:200;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translateX(-50%)}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+  .hero h1 .line span{transform:none}
+}
+</style>
+</head>
+<body>
+
+<header class="nav" id="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="QSHIELD home"><img src="/assets/logo.png" alt=""><span>QSHIELD</span></a>
+    <nav class="links" id="links" aria-label="Main">
+      <a href="#launch">Launch</a><a href="#scan">Scanner</a><a href="#shield">Shield</a><a href="#sentinel">Sentinel</a><a href="#migrate">Auto-migrate</a><a href="#audits">Audits</a><a href="#token">$QSHIELD</a>
+    </nav>
+    <div class="nav-right">
+      <div style="position:relative">
+        <button class="btn sm wallet-btn" id="walletBtn" aria-haspopup="dialog">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M16 13h2M3 9l13-5 1 2"/></svg>
+          <span id="walletLabel">Connect wallet</span>
+        </button>
+        <div class="acct" id="acct" role="menu">
+          <div class="addr" id="acctAddr"></div>
+          <button role="menuitem" data-act="scan">Scan this wallet</button>
+          <button role="menuitem" data-act="copy">Copy address</button>
+          <button role="menuitem" data-act="disconnect">Disconnect</button>
+        </div>
+      </div>
+      <button class="menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false"><svg width="20" height="20" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO -->
+  <div class="wrap hero">
+    <div>
+      <h1><span class="line"><span>Protect your</span></span><span class="line"><span>crypto before</span></span><span class="line"><span>quantum</span></span><span class="line"><span>breaks it.</span></span></h1>
+      <p class="lead">QSHIELD scans Solana wallets, tokens and programs for quantum exposure, then moves what matters into vaults that only open with hash-based signatures.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="#scan">Get your exposure score</a>
+        <button class="btn" id="heroConnect">Connect wallet</button>
+      </div>
+    </div>
+    <div class="stage" id="stage">
+      <canvas id="shieldCanvas" aria-label="Interactive QSHIELD tile shield over a planet horizon" role="img"></canvas>
+      <div class="hud l">scan<br>shield<br>survive</div>
+      <div class="hud r">post-quantum<br>security<br>on solana</div>
+      <div class="hint" id="hint">move across the shield, click to pulse</div>
+    </div>
+  </div>
+
+  <!-- THREAT -->
+  <section class="block" id="threat">
+    <div class="wrap threat">
+      <div>
+        <h2>Your address is already public.</h2>
+        <p>A Solana address is an ed25519 public key. It's on chain the first time anyone sends you something. Classical computers can't work backwards from it to your private key.</p>
+        <p>A large enough quantum computer running Shor's algorithm could. Because the chain keeps everything, those keys can be collected today and attacked later. Moving after that day is too late for any key that was already exposed.</p>
+        <p>QSHIELD is built for everything that already exists: wallets, treasuries, tokens and protocols.</p>
+      </div>
+      <div class="keycard" aria-label="Exposed wallet">
+        <div class="row"><span>7xKX…gAsU</span><span class="tag risk">public key visible</span></div>
+        <div class="big">412.80 SOL</div>
+        <div class="row"><span class="k">first seen</span><span>2022-03-14</span></div>
+        <div class="row"><span class="k">key exposed for</span><span>4 yrs 6 mos</span></div>
+        <div class="row"><span class="k">signature scheme</span><span>ed25519</span></div>
+        <div class="row"><span class="k">exposure score</span><span>82 / 100</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="block" id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Five layers, one network.</h2>
+        <p>Start with a free score. Move assets into post-quantum vaults when you're ready. Let Sentinel and pre-set rules handle the moment it matters.</p>
+      </div>
+      <div class="steps">
+        <a class="step" href="#scan"><span class="n">1</span><svg class="glyph" viewBox="0 0 44 44" fill="none" stroke="#f2f2f0" stroke-width="1.5"><rect x="6" y="6" width="32" height="32" rx="3"/><path d="M6 22h32" stroke-dasharray="3 3"/><rect x="18" y="18" width="8" height="8" fill="#f2f2f0"/></svg><h3>Quantum risk scanner</h3><p>Paste or connect any Solana wallet and get a Quantum Exposure Score from 0 to 100.</p></a>
+        <a class="step" href="#shield"><span class="n">2</span><svg class="glyph" viewBox="0 0 44 44" fill="none" stroke="#f2f2f0" stroke-width="1.5"><path d="M22 4l15 6v12c0 9-7 15-15 18C14 37 7 31 7 22V10z"/><rect x="18" y="17" width="8" height="8" fill="#f2f2f0"/></svg><h3>Quantum shield</h3><p>Move supported assets into vaults that only open with hash-based, one-time signatures.</p></a>
+        <a class="step" href="#sentinel"><span class="n">3</span><svg class="glyph" viewBox="0 0 44 44" fill="none" stroke="#f2f2f0" stroke-width="1.5"><circle cx="22" cy="22" r="16"/><circle cx="22" cy="22" r="8"/><rect x="19" y="19" width="6" height="6" fill="#f2f2f0"/></svg><h3>Quantum sentinel</h3><p>AI agents track quantum computing breakthroughs and re-assess cryptographic risk.</p></a>
+        <a class="step" href="#migrate"><span class="n">4</span><svg class="glyph" viewBox="0 0 44 44" fill="none" stroke="#f2f2f0" stroke-width="1.5"><rect x="4" y="15" width="12" height="12" rx="2"/><rect x="28" y="15" width="12" height="12" rx="2" fill="#f2f2f0"/><path d="M17 21h10M23 17l4 4-4 4"/></svg><h3>Auto-migration</h3><p>Pre-authorize tightly limited transfers to safer custody when a verified trigger fires.</p></a>
+        <a class="step" href="#audits"><span class="n">5</span><svg class="glyph" viewBox="0 0 44 44" fill="none" stroke="#f2f2f0" stroke-width="1.5"><rect x="9" y="5" width="26" height="34" rx="3"/><path d="M15 14h14M15 20h14M15 26h8"/><rect x="25" y="28" width="6" height="6" fill="#f2f2f0"/></svg><h3>Security marketplace</h3><p>Projects get audited for quantum readiness and publish reports anyone can verify.</p></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCANNER -->
+  <section class="block" id="scan">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>How exposed is your wallet?</h2>
+        <p>Paste any Solana address. We check the key type, what the address holds and how long it has been active, then score how much a quantum attacker could reach. Free, and nothing is stored.</p>
+      </div>
+      <div class="panel">
+        <form id="scanForm" class="scan-row" novalidate>
+          <label class="sr" for="scanInput">Solana wallet address</label>
+          <input class="input mono" id="scanInput" placeholder="Solana wallet address" autocomplete="off" spellcheck="false">
+          <button class="btn" type="button" id="useMine">Use my wallet</button>
+          <button class="btn primary" type="submit" id="scanBtn">Scan</button>
+        </form>
+        <p class="note" id="scanErr" role="alert" style="margin:10px 0 0;color:var(--risk)"></p>
+        <div id="manualWrap" style="display:none;margin-top:14px">
+          <div class="field" style="max-width:320px;margin:0"><label for="manualSol">Add approximate holdings to sharpen the score.</label><input class="input mono" id="manualSol" inputmode="decimal" placeholder="Holdings in SOL"></div>
+        </div>
+        <div class="result" id="result" aria-live="polite">
+          <div class="ring-box">
+            <div class="ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" stroke="#222" stroke-width="8" fill="none"/><circle id="ringArc" cx="60" cy="60" r="52" stroke="#f2f2f0" stroke-width="8" fill="none" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7" style="transition:stroke-dashoffset 1s cubic-bezier(.2,.8,.2,1),stroke .3s"/></svg>
+              <div class="val"><div><span id="scoreNum">0</span><small>of 100</small></div></div></div>
+            <div class="band" id="band"></div>
+            <div class="note" id="scanAddr" style="font-family:var(--mono)"></div>
+          </div>
+          <div>
+            <div class="mode" id="scanMode"></div>
+            <div class="factors" id="factors"></div>
+            <div class="share-row">
+              <a class="btn primary sm" id="shareX" target="_blank" rel="noopener">Share on X</a>
+              <button class="btn sm" id="copyScore">Copy result</button>
+              <a class="btn sm" href="#shield">Shield this wallet</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHIELD -->
+  <section class="block" id="shield">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Vaults that don't trust curves.</h2>
+        <p>SOL in a QSHIELD vault sits at a program address with no elliptic-curve key behind it. It only moves with a one-time Winternitz signature, built from hash chains in your browser.</p>
+      </div>
+      <div class="split">
+        <div class="prose">
+          <h3 style="margin-top:0">Why hashes</h3>
+          <p>Shor's algorithm breaks the discrete-log problem behind ed25519. Hash functions don't have that structure. The best known quantum attack on them, Grover's search, only square-roots the work, so a 256-bit hash still leaves around 2¹²⁸ steps.</p>
+          <h3>One key, one use</h3>
+          <p>A Winternitz key is 67 secret values. Signing reveals a point partway along each value's hash chain. Anyone can finish the chains and check they land on your public key. Reusing a key leaks more of each chain, so every vault withdrawal rotates to a fresh one.</p>
+          <h3>Try it</h3>
+          <p>The panel runs a real Winternitz one-time signature with SHA-256 in this page. Nothing leaves your browser.</p>
+          <p class="note">NIST standardized the hash-based SLH-DSA scheme as FIPS 205 in 2024.</p>
+        </div>
+        <div class="panel">
+          <div class="field"><label for="wMsg">Message to sign</label><input class="input mono" id="wMsg" value="withdraw 12.5 SOL to 9wQe…kT2p"></div>
+          <div class="btn-row">
+            <button class="btn sm" id="wGen">Generate key</button>
+            <button class="btn sm primary" id="wSign" disabled>Sign</button>
+            <button class="btn sm" id="wVer" disabled>Verify</button>
+            <button class="btn sm" id="wTamper" disabled>Verify a changed message</button>
+          </div>
+          <div class="chains" id="chains" aria-hidden="true"></div>
+          <div class="wots-out" id="wOut" aria-live="polite">Generate a key to start. Each bar is one of 67 hash chains, 15 steps long.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SENTINEL -->
+  <section class="block" id="sentinel">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Sentinel watches the labs so you don't have to.</h2>
+        <p>AI agents read research papers, hardware roadmaps and standards updates, separate real milestones from press releases, and move the network's threat level when the evidence does.</p>
+      </div>
+      <div class="sentinel">
+        <div class="panel">
+          <div class="lbl">Network threat level</div>
+          <div style="font-size:40px;font-weight:600;letter-spacing:-.04em;margin-top:4px" id="lvlName">Watch</div>
+          <div class="levels" id="levels">
+            <div class="level" data-l="4"><i></i>Critical: migration triggers fire</div>
+            <div class="level" data-l="3"><i></i>High: recommend shielding now</div>
+            <div class="level" data-l="2"><i></i>Elevated: credible progress</div>
+            <div class="level on" data-l="1"><i></i>Watch: steady research pace</div>
+            <div class="level" data-l="0"><i></i>Calm</div>
+          </div>
+          <p class="note" style="margin-top:16px">Level changes need two independent agents and a human reviewer to agree before any trigger can fire.</p>
+        </div>
+        <div>
+          <div class="feed">
+            <div class="signal"><time>research</time><div><h4>Error-corrected logical qubit count rises in a lab preprint</h4><p>Agents compare the claimed logical qubits and error rates against published resource estimates for breaking 256-bit elliptic curves.</p></div><span class="delta up">risk +2</span></div>
+            <div class="signal"><time>roadmap</time><div><h4>Vendor roadmap shifts a fault-tolerant system forward one year</h4><p>Roadmaps are weighted lower than peer-reviewed results. Logged, level unchanged.</p></div><span class="delta flat">no change</span></div>
+            <div class="signal"><time>2024-08</time><div><h4>NIST publishes FIPS 203, 204 and 205</h4><p>Post-quantum standards for key exchange and signatures, including hash-based SLH-DSA. A defense milestone, not an attack one.</p></div><span class="delta flat">defense</span></div>
+            <div class="signal"><time>headline</time><div><h4>Physical qubit headline with no error-correction data</h4><p>Physical qubit counts alone don't show an ability to break wallet keys. Filtered as noise.</p></div><span class="delta flat">filtered</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AUTO-MIGRATION -->
+  <section class="block" id="migrate">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Decide now what happens on q-day.</h2>
+        <p>Pre-authorize a narrow, capped transfer into your own QSHIELD vault. It can only go to you, only up to your limit, and only when a verified trigger fires.</p>
+      </div>
+      <div class="split">
+        <div class="panel">
+          <div class="field"><label for="pTrig">Trigger</label>
+            <select class="input" id="pTrig"><option value="critical">Sentinel reaches Critical</option><option value="high">Sentinel reaches High</option><option value="canary">My canary key is spent</option><option value="manual">Only when I confirm</option></select></div>
+          <div class="field"><span class="lbl">Assets</span>
+            <div class="choices" id="pAssets"><button class="choice" type="button" aria-pressed="true" data-v="SOL">SOL</button><button class="choice" type="button" aria-pressed="true" data-v="USDC">USDC</button><button class="choice" type="button" aria-pressed="false" data-v="SPL">Other SPL tokens</button></div></div>
+          <div class="field"><label for="pCap">Move up to <b id="pCapV">80%</b> of each asset per trigger</label><input type="range" id="pCap" min="10" max="100" step="5" value="80"></div>
+          <div class="field"><label for="pCool">Cooldown between migrations</label>
+            <select class="input" id="pCool"><option value="6">6 hours</option><option value="24" selected>24 hours</option><option value="72">72 hours</option></select></div>
+        </div>
+        <div class="panel">
+          <div class="lbl" style="margin-bottom:10px">Your rule</div>
+          <p class="policy-sum" id="pSum"></p>
+          <button class="btn primary" id="pSign" style="width:100%">Connect wallet to sign rule</button>
+          <p class="note" id="pStatus" style="margin-top:12px">Signing records your rule. It's free and doesn't move funds.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LAUNCH -->
+  <section class="block" id="launch">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Launch shielded.</h2>
+        <p>Every coin launched on QSHIELD is born quantum-ready: authorities locked down, treasury in a post-quantum vault, and a public readiness score holders can check before they buy.</p>
+      </div>
+      <div class="launch">
+        <div class="panel">
+          <label class="drop" id="drop" for="lImg">
+            <span class="thumb" id="dropThumb"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#777" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg></span>
+            <span><b style="font-weight:500">Add a coin image</b><br><span class="note">Drop a file or click to choose. Square works best.</span></span>
+            <input type="file" id="lImg" accept="image/*" class="sr">
+          </label>
+          <div class="grid2">
+            <div class="field"><label for="lName">Name</label><input class="input" id="lName" placeholder="Shielded Cat" maxlength="32"></div>
+            <div class="field"><label for="lTick">Ticker</label><input class="input mono" id="lTick" placeholder="$SCAT" maxlength="10"></div>
+          </div>
+          <div class="field"><label for="lDesc">What is it</label><textarea class="input" id="lDesc" placeholder="One or two lines people will see before they buy" maxlength="200"></textarea></div>
+          <div class="grid2">
+            <div class="field"><label for="lSupply">Total supply</label><select class="input" id="lSupply"><option value="1000000000" selected>1,000,000,000</option><option value="100000000">100,000,000</option><option value="21000000">21,000,000</option></select></div>
+            <div class="field"><label for="lTreas">Treasury in PQ vault: <b id="lTreasV">5%</b></label><input type="range" id="lTreas" min="0" max="20" step="1" value="5" style="margin-top:16px"></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="tMint" checked><span><b>Revoke mint authority</b><small>No one can print more supply, ever.</small></span></label>
+          <label class="toggle"><input type="checkbox" id="tFreeze" checked><span><b>Revoke freeze authority</b><small>No one can freeze holder balances.</small></span></label>
+          <label class="toggle"><input type="checkbox" id="tFees" checked><span><b>Sweep creator fees into the vault</b><small>Fees land behind a hash-based key instead of your hot wallet.</small></span></label>
+          <label class="toggle"><input type="checkbox" id="tHolders"><span><b>Free scans for top holders</b><small>Top 100 holders get an exposure score and a one-click shield.</small></span></label>
+          <div class="field" style="margin-top:14px"><span class="lbl">First buy</span>
+            <div class="choices" id="lBuy"><button class="choice" type="button" aria-pressed="true" data-v="0">None</button><button class="choice" type="button" aria-pressed="false" data-v="0.1">0.1 SOL</button><button class="choice" type="button" aria-pressed="false" data-v="0.5">0.5 SOL</button><button class="choice" type="button" aria-pressed="false" data-v="1">1 SOL</button><button class="choice" type="button" aria-pressed="false" data-v="2">2 SOL</button></div></div>
+          <button class="hold" id="holdBtn" aria-describedby="holdNote"><div class="fill" id="holdFill"></div><span id="holdLabel">Connect and hold to launch</span></button>
+          <p class="note" id="holdNote" style="margin-top:10px">Holding signs your launch manifest with your wallet.</p>
+          <div class="done panel" id="lDone" style="background:#000"></div>
+        </div>
+        <div class="coin-card">
+          <div class="panel">
+            <div class="coin-head">
+              <div class="thumb" id="cThumb">?</div>
+              <div><h3 id="cName">Your coin</h3><div class="tick" id="cTick">$TICKER</div></div>
+              <div class="mini-ring" title="Quantum readiness score"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="17" stroke="#222" stroke-width="3" fill="none"/><circle id="cArc" cx="20" cy="20" r="17" stroke="#f2f2f0" stroke-width="3" fill="none" stroke-linecap="round" stroke-dasharray="106.8" stroke-dashoffset="106.8" style="transition:stroke-dashoffset .5s"/></svg><b id="cScore">0</b></div>
+            </div>
+            <p class="note" id="cDesc" style="margin:16px 0 0">Readiness score updates as you choose. Holders see it on the coin page.</p>
+            <div class="ships" id="ships"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- AUDITS -->
+  <section class="block" id="audits">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Prove your protocol is ready.</h2>
+        <p>Projects pay QSHIELD to audit their quantum readiness. Every report is hashed and signed on chain, so holders can check it hasn't been edited after the fact.</p>
+      </div>
+      <div class="tiers">
+        <div class="panel tier"><h3>Exposure report</h3><div class="price">Free</div><ul><li>Score for any wallet or treasury</li><li>Shareable result card</li><li>Key exposure timeline</li></ul><a class="btn" href="#scan">Scan a wallet</a></div>
+        <div class="panel tier feature"><h3>Readiness audit</h3><div class="price">Paid in SOL or $QSHIELD</div><ul><li>Program authorities and upgrade keys</li><li>Treasury and multisig key exposure</li><li>Migration plan with priorities</li><li>Signed, on-chain report hash</li></ul><button class="btn primary" id="auditReq">Request an audit</button></div>
+        <div class="panel tier"><h3>Treasury migration</h3><div class="price">Custom</div><ul><li>Hands-on move into PQ vaults</li><li>Auto-migration rules for your DAO</li><li>Sentinel alerts for your team</li></ul><button class="btn" id="auditReq2">Talk to us</button></div>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <div class="lbl">What every report includes</div>
+        <dl class="report">
+          <dt>project</dt><dd>Your protocol</dd>
+          <dt>readiness</dt><dd>Score from 0 to 100</dd>
+          <dt>report sha-256</dt><dd>Hash of the full report</dd>
+          <dt>signed by</dt><dd>QSHIELD auditor key (Winternitz, rotation 14)</dd>
+          <dt>anchored</dt><dd>Solana memo transaction</dd>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOKEN -->
+  <section class="block" id="token">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>The $QSHIELD flywheel.</h2>
+        <p>Vault and audit fees are real protocol revenue. Revenue buys $QSHIELD on the market, burns part of it, and funds the next round of security tools.</p>
+      </div>
+      <div class="token">
+        <svg class="wheel" id="wheel" viewBox="0 0 560 560" role="img" aria-label="Flywheel diagram with eight steps"></svg>
+        <ol class="wheel-list" id="wheelList">
+          <li>More wallets and projects protected</li>
+          <li>Growing protocol adoption</li>
+          <li>More security and vault fees</li>
+          <li>Recurring protocol revenue</li>
+          <li>Revenue funds $QSHIELD buybacks</li>
+          <li>Part of what's bought is burned</li>
+          <li>More funding for security development</li>
+          <li>Better tools attract more users</li>
+        </ol>
+      </div>
+      <div class="compare">
+        <div class="panel"><h3>New coins</h3><p>Shielded launches make new tokens quantum-ready from day one, with locked authorities and treasuries in post-quantum vaults.</p></div>
+        <div class="panel" style="border-color:#4a4a4a"><h3>Everything else</h3><p>The bigger job is what already exists. Most value on Solana sits in wallets, treasuries and protocols created long before anyone thought about q-day, and all of it may need to move.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="closing wrap">
+    <img src="/assets/logo.png" alt="QSHIELD logo">
+    <h2>QSHIELD</h2>
+    <p>Quantum security for a brighter tomorrow. Find out where you stand in ten seconds.</p>
+    <a class="btn primary" href="#scan">Get your exposure score</a>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Exposure scores are estimates, not audits. Nothing here is financial advice.</p>
+    <p>Built on Solana</p>
+  </div>
+</footer>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="sheet">
+    <button class="close-x" id="mClose" aria-label="Close">×</button>
+    <h3 id="mTitle">Connect a wallet</h3>
+    <p>QSHIELD never asks for your seed phrase. Connecting only shares your public address.</p>
+    <div class="wl" id="wl"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const W3 = window.solanaWeb3 || null;
+const RPC = (window.QSHIELD_CONFIG && window.QSHIELD_CONFIG.rpcUrl) || "https://api.mainnet-beta.solana.com";
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const store = { get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}} };
+
+let toastT; function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("show"),2800)}
+const short = a => a ? a.slice(0,4)+"…"+a.slice(-4) : "";
+const A58="123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+function b58(bytes){let d=[0];for(const b of bytes){let c=b;for(let i=0;i<d.length;i++){c+=d[i]<<8;d[i]=c%58;c=(c/58)|0}while(c){d.push(c%58);c=(c/58)|0}}let s="";for(const b of bytes){if(b===0)s+="1";else break}for(let i=d.length-1;i>=0;i--)s+=A58[d[i]];return s}
+const hex = u => [...u].map(b=>b.toString(16).padStart(2,"0")).join("");
+async function sha(data){return new Uint8Array(await crypto.subtle.digest("SHA-256",data))}
+const timeout=(p,ms)=>Promise.race([p,new Promise((_,r)=>setTimeout(()=>r(new Error("timeout")),ms))]);
+
+/* nav */
+const nav=$("#nav"); addEventListener("scroll",()=>nav.classList.toggle("scrolled",scrollY>10),{passive:true});
+$("#menuBtn").onclick=()=>{const o=$("#links").classList.toggle("open");$("#menuBtn").setAttribute("aria-expanded",o)};
+$$("#links a").forEach(a=>a.onclick=()=>$("#links").classList.remove("open"));
+
+/* ================= WALLET (Solana web3.js + injected providers) ================= */
+const WALLETS=[
+  {id:"phantom",name:"Phantom",color:"#ab9ff2",get:()=>window.phantom?.solana?.isPhantom?window.phantom.solana:(window.solana?.isPhantom?window.solana:null),url:"https://phantom.app/"},
+  {id:"solflare",name:"Solflare",color:"#fc7227",get:()=>window.solflare?.isSolflare?window.solflare:null,url:"https://solflare.com/"},
+  {id:"backpack",name:"Backpack",color:"#e33e3f",get:()=>window.backpack?.solana||window.backpack||null,url:"https://backpack.app/"},
+];
+const wallet={provider:null,pubkey:null,name:null};
+function renderWalletList(){
+  const wl=$("#wl");wl.innerHTML="";
+  WALLETS.forEach(w=>{const p=w.get();const b=document.createElement("button");
+    b.innerHTML=`<span class="wi" style="background:${w.color}">${w.name[0]}</span>${w.name}<small class="${p?"det":""}">${p?"Detected":"Install"}</small>`;
+    b.onclick=()=>p?connect(w,p):window.open(w.url,"_blank","noopener");wl.appendChild(b)});
+  if(!WALLETS.some(w=>w.get())){const n=document.createElement("p");n.className="note";n.style.margin="10px 0 0";n.textContent="No wallet extension found in this browser. If you have one installed, open this page in its own tab so the extension can reach it.";wl.appendChild(n)}
+}
+function openModal(){renderWalletList();$("#modal").classList.add("open");$("#wl button")?.focus()}
+function closeModal(){$("#modal").classList.remove("open")}
+$("#mClose").onclick=closeModal;$("#modal").onclick=e=>{if(e.target.id==="modal")closeModal()};
+addEventListener("keydown",e=>{if(e.key==="Escape"){closeModal();$("#acct").classList.remove("open")}});
+async function connect(w,p){
+  try{
+    const res=await p.connect();
+    const pk=res?.publicKey||p.publicKey;
+    const pub=W3?new W3.PublicKey(pk.toString()):pk;
+    wallet.provider=p;wallet.pubkey=pub.toString();wallet.name=w.name;
+    store.set("qs_wallet",w.id);
+    p.on?.("disconnect",onDisconnect);p.on?.("accountChanged",k=>{if(k){wallet.pubkey=k.toString();updateWalletUI()}else onDisconnect()});
+    closeModal();updateWalletUI();toast(`${w.name} connected: ${short(wallet.pubkey)}`);
+  }catch(e){toast(e?.code===4001?"Connection request was declined.":"Couldn't connect. Unlock your wallet and try again.")}
+}
+function onDisconnect(){wallet.provider=null;wallet.pubkey=null;wallet.name=null;store.set("qs_wallet",null);updateWalletUI()}
+async function disconnect(){try{await wallet.provider?.disconnect?.()}catch(e){}onDisconnect();toast("Wallet disconnected.")}
+function updateWalletUI(){
+  const on=!!wallet.pubkey;
+  $("#walletLabel").textContent=on?short(wallet.pubkey):"Connect wallet";$("#walletLabel").classList.toggle("long",!on);
+  $("#walletBtn").classList.toggle("wallet-btn",true);
+  $("#walletBtn").querySelector("svg").style.display=on?"none":"";
+  let dot=$("#walletBtn .dot");if(on&&!dot){dot=document.createElement("span");dot.className="dot";$("#walletBtn").prepend(dot)}if(!on&&dot)dot.remove();
+  $("#acctAddr").textContent=wallet.pubkey||"";
+  $("#heroConnect").textContent=on?"Scan my wallet":"Connect wallet";
+  $("#pSign").textContent=on?"Sign rule with "+wallet.name:"Connect wallet to sign rule";
+  $("#holdLabel").textContent=on?"Hold to sign and launch":"Connect and hold to launch";
+}
+$("#walletBtn").onclick=e=>{e.stopPropagation();if(wallet.pubkey)$("#acct").classList.toggle("open");else openModal()};
+document.addEventListener("click",()=>$("#acct").classList.remove("open"));
+$("#acct").onclick=async e=>{const a=e.target.dataset.act;if(!a)return;$("#acct").classList.remove("open");
+  if(a==="disconnect")disconnect();
+  if(a==="copy"){try{await navigator.clipboard.writeText(wallet.pubkey);toast("Address copied.")}catch(_){toast(wallet.pubkey)}}
+  if(a==="scan"){$("#scanInput").value=wallet.pubkey;location.hash="#scan";runScan()}};
+$("#heroConnect").onclick=()=>{if(wallet.pubkey){$("#scanInput").value=wallet.pubkey;$("#scan").scrollIntoView();runScan()}else openModal()};
+// silent reconnect if trusted
+setTimeout(()=>{const id=store.get("qs_wallet");const w=WALLETS.find(x=>x.id===id);const p=w?.get();
+  if(p?.connect)p.connect({onlyIfTrusted:true}).then(r=>{const pk=r?.publicKey||p.publicKey;if(pk){wallet.provider=p;wallet.pubkey=pk.toString();wallet.name=w.name;updateWalletUI()}}).catch(()=>{})},400);
+async function signText(text){
+  if(!wallet.provider){openModal();throw new Error("not connected")}
+  if(!wallet.provider.signMessage)throw new Error("This wallet can't sign messages.");
+  const res=await wallet.provider.signMessage(new TextEncoder().encode(text),"utf8");
+  const sig=res?.signature||res;return b58(new Uint8Array(sig));
+}
+
+/* ================= HERO CANVAS ================= */
+(function hero(){
+  const cv=$("#shieldCanvas"),ctx=cv.getContext("2d");
+  const T=[[627,305,.27],[514,330,.3],[740,330,.3],[401,400,.42],[853,400,.42],[395,507,.62],[858,507,.62],[395,610,.88],[858,610,.88],[430,712,.95],[823,712,.95],[527,793,.95],[726,793,.95],[627,828,.95],[627,925,1,"tip"],[627,467,.33,"in"],[507,572,.36,"in"],[746,572,.36,"in"],[627,683,.36,"in"],[627,572,1,"core"]]
+    .map(([x,y,g,k])=>({x:(x-627)/100,y:(y-600)/100,g,k,h:0,boost:0}));
+  const dots=[];for(let i=0;i<520;i++){const u=Math.random()*2-1,th=Math.random()*Math.PI*2;const r=Math.sqrt(1-u*u);dots.push([r*Math.cos(th),u,r*Math.sin(th),Math.random()])}
+  let w=0,h=0,dpr=1,mouse=null,t0=performance.now(),pulse=-1,running=true;
+  function size(){const r=cv.getBoundingClientRect();dpr=Math.min(2,devicePixelRatio||1);w=r.width;h=r.height;cv.width=w*dpr;cv.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
+  new ResizeObserver(size).observe(cv);size();
+  cv.addEventListener("pointermove",e=>{const r=cv.getBoundingClientRect();mouse=[e.clientX-r.left,e.clientY-r.top]});
+  cv.addEventListener("pointerleave",()=>mouse=null);
+  cv.addEventListener("pointerdown",()=>pulse=performance.now());
+  new IntersectionObserver(es=>{running=es[0].isIntersecting;if(running)requestAnimationFrame(frame)}).observe(cv);
+  function tilePath(x,y,s,tip){ctx.beginPath();if(tip){ctx.moveTo(x-s/2,y-s/2);ctx.lineTo(x+s/2,y-s/2);ctx.lineTo(x+s/2,y+s*.28);ctx.lineTo(x,y+s/2+s*.05);ctx.lineTo(x-s/2,y+s*.28);ctx.closePath()}else ctx.rect(x-s/2,y-s/2,s,s)}
+  function frame(now){
+    if(!running)return;const tt=reduce?0:(now-t0)/1000;
+    const U=Math.min(w,h)/10.2,cx=w/2,cy=h*.43;
+    ctx.clearRect(0,0,w,h);
+    // planet horizon
+    const R=U*9,pcx=cx,pcy=cy+U*12.6;
+    const g=ctx.createRadialGradient(pcx,pcy-R*.2,R*.2,pcx,pcy,R);g.addColorStop(0,"#0a0a0a");g.addColorStop(1,"#141414");
+    ctx.save();ctx.beginPath();ctx.arc(pcx,pcy,R,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();ctx.clip();
+    const rot=tt*.05;
+    for(const [x,y,z,b] of dots){const xr=x*Math.cos(rot)+z*Math.sin(rot),zr=-x*Math.sin(rot)+z*Math.cos(rot);if(zr<0)continue;
+      const px=pcx+xr*R,py=pcy+y*R;if(py>h)continue;ctx.fillStyle=`rgba(255,255,255,${(.15+.55*b)*zr})`;ctx.fillRect(px,py,1.3,1.3)}
+    ctx.restore();
+    ctx.save();ctx.shadowColor="rgba(255,255,255,.55)";ctx.shadowBlur=24;ctx.strokeStyle="rgba(255,255,255,.55)";ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.arc(pcx,pcy,R,Math.PI*1.08,Math.PI*1.92);ctx.stroke();ctx.restore();
+    // orbits
+    const orbits=[[U*4.7,U*3.7,-.35,.11],[U*4.9,U*2.8,.42,-.08],[U*4.1,U*4.6,.05,.06]];
+    orbits.forEach(([rx,ry,a,sp],i)=>{ctx.save();ctx.translate(cx,cy);ctx.rotate(a);ctx.strokeStyle="rgba(255,255,255,.09)";ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,0,rx,ry,0,0,Math.PI*2);ctx.stroke();
+      for(let k=0;k<2;k++){const th=tt*sp*2+k*Math.PI+i;const nx=Math.cos(th)*rx,ny=Math.sin(th)*ry;const s=k?5:7;ctx.shadowColor="#fff";ctx.shadowBlur=14;ctx.fillStyle="#f2f2f0";ctx.fillRect(nx-s/2,ny-s/2,s,s)}ctx.restore()});
+    // scan beam
+    const cyc=4.2,ph=(tt%cyc)/cyc,scanY=cy+(-4.4+ph*9)*U;
+    if(!reduce){const bg=ctx.createLinearGradient(0,scanY-U*.8,0,scanY+U*.1);bg.addColorStop(0,"rgba(255,255,255,0)");bg.addColorStop(1,"rgba(255,255,255,.06)");ctx.fillStyle=bg;ctx.fillRect(cx-U*3.4,scanY-U*.8,U*6.8,U*.9);
+      ctx.strokeStyle="rgba(255,255,255,.35)";ctx.beginPath();ctx.moveTo(cx-U*3.4,scanY);ctx.lineTo(cx+U*3.4,scanY);ctx.stroke()}
+    // connectors
+    ctx.strokeStyle="rgba(230,230,230,.75)";ctx.lineWidth=Math.max(1.5,U*.06);
+    const L=(x1,y1,x2,y2)=>{ctx.beginPath();ctx.moveTo(cx+x1*U,cy+y1*U);ctx.lineTo(cx+x2*U,cy+y2*U);ctx.stroke()};
+    L(0,-2.45,0,-1.75);L(0,-.92,0,-.5);L(0,.5,0,.7);L(-.75,0,-.45,0);L(.45,0,.75,0);
+    // tiles
+    const pAge=pulse<0?99:(now-pulse)/1000;
+    for(const p of T){const x=cx+p.x*U,y=cy+p.y*U;
+      let target=0;if(mouse){const d=Math.hypot(mouse[0]-x,mouse[1]-y)/U;target=Math.max(0,1-d/1.6)}
+      p.h+=(target-p.h)*.18;
+      const dist=Math.abs(y-scanY)/U;p.boost=Math.max(p.boost*.94,!reduce&&dist<.35?.6:0);
+      const rd=Math.hypot(p.x,p.y),pw=Math.max(0,1-Math.abs(pAge*7-rd)/1.1)*(pAge<1.4?1:0);
+      const lum=Math.min(1,p.g+(1-p.g)*Math.max(p.h,p.boost,pw));
+      const s=U*(p.k==="in"?.82:p.k==="core"?.86:.94)*(1+.1*Math.max(p.h,pw));
+      const c=Math.round(30+lum*212);
+      ctx.save();if(lum>.8){ctx.shadowColor="rgba(255,255,255,.45)";ctx.shadowBlur=U*.5*lum}
+      const gr=ctx.createLinearGradient(x-s/2,y-s/2,x+s/2,y+s/2);gr.addColorStop(0,`rgb(${c},${c},${c})`);gr.addColorStop(1,`rgb(${Math.round(c*.82)},${Math.round(c*.82)},${Math.round(c*.82)})`);
+      ctx.fillStyle=gr;tilePath(x,y,s,p.k==="tip");ctx.fill();ctx.restore()}
+    if(!reduce||mouse)requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  if(reduce)cv.addEventListener("pointermove",()=>requestAnimationFrame(frame));
+})();
+
+/* ================= SCANNER ================= */
+let lastScan=null;
+$("#useMine").onclick=()=>{if(wallet.pubkey){$("#scanInput").value=wallet.pubkey;runScan()}else openModal()};
+$("#scanForm").onsubmit=e=>{e.preventDefault();runScan()};
+$("#manualSol").addEventListener("change",()=>{if(lastScan)runScan(true)});
+async function runScan(reuse){
+  const addr=$("#scanInput").value.trim();$("#scanErr").textContent="";
+  if(!addr){$("#scanErr").textContent="Paste a Solana address to scan, or connect your wallet.";return}
+  let pk,onCurve=true;
+  try{ if(W3){pk=new W3.PublicKey(addr);onCurve=W3.PublicKey.isOnCurve(pk.toBytes())} else if(!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr)) throw 0 }
+  catch(e){$("#scanErr").textContent="That isn't a valid Solana address. Addresses are 32 to 44 letters and numbers.";return}
+  const btn=$("#scanBtn");btn.disabled=true;btn.textContent="Scanning…";
+  let bal=null,sigs=null,firstTs=null,live=false;
+  if(!(reuse&&lastScan&&lastScan.addr===addr&&!lastScan.live)){
+    try{const conn=new W3.Connection(RPC,"confirmed");
+      const [b,s]=await timeout(Promise.all([conn.getBalance(pk),conn.getSignaturesForAddress(pk,{limit:1000})]),7000);
+      bal=b/1e9;sigs=s.length;firstTs=s.length?s[s.length-1].blockTime:null;live=true}catch(e){live=false}
+  }
+  if(!live){const m=parseFloat($("#manualSol").value);bal=isNaN(m)?null:m;$("#manualWrap").style.display="block"}else $("#manualWrap").style.display="none";
+  const f=[];
+  f.push(onCurve?{n:"Key type",p:45,max:45,d:"An ed25519 wallet key. Its public half is on chain, which is exactly what Shor's algorithm targets."}
+               :{n:"Key type",p:8,max:45,d:"A program-derived address with no private key. Its safety depends on the program's rules, which need their own review."});
+  const vp=bal==null?15:Math.min(30,Math.round(Math.log10(1+bal)*10));
+  f.push({n:"Value at risk",p:vp,max:30,d:bal==null?"Holdings unknown, so we assume a typical balance. Add holdings above for a sharper score.":`${bal.toLocaleString(undefined,{maximumFractionDigits:3})} SOL reachable by whoever controls this key.`});
+  let ap,ad;
+  if(sigs==null){ap=8;ad="Activity unknown. Every outgoing transaction re-confirms the key on chain."}
+  else{ap=Math.min(15,Math.round(Math.log10(1+sigs)*5));const yrs=firstTs?((Date.now()/1000-firstTs)/31557600):0;
+    ad=`${sigs>=1000?"1,000+":sigs} transactions${firstTs?`, key public for about ${yrs<1?"under a year":yrs.toFixed(1)+" years"}`:""}. Older keys have been collectable for longer.`}
+  f.push({n:"Exposure history",p:ap,max:15,d:ad});
+  f.push({n:"Protection",p:10,max:10,d:"No QSHIELD vault or auto-migration rule found for this address."});
+  const score=Math.min(100,f.reduce((a,x)=>a+x.p,0));
+  lastScan={addr,score,live};
+  const band=score>80?["Critical","var(--risk)"]:score>60?["High","var(--risk)"]:score>30?["Moderate","var(--warn)"]:["Low","var(--text)"];
+  $("#result").classList.add("show");
+  $("#scanMode").textContent=live?"Live data from Solana mainnet.":"Balance and history estimated.";
+  $("#scanAddr").textContent=short(addr);
+  $("#band").textContent=band[0]+" exposure";$("#band").style.color=band[1];
+  const arc=$("#ringArc");arc.style.stroke=score>60?"#e5484d":"#f2f2f0";arc.style.strokeDashoffset=326.7*(1-score/100);
+  const n=$("#scoreNum"),start=performance.now();(function tick(t){const k=Math.min(1,(t-start)/900);n.textContent=Math.round(score*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(tick)})(start);
+  $("#factors").innerHTML=f.map(x=>`<div class="factor"><b>${x.n}</b><span class="pts">+${x.p} / ${x.max}</span><div class="bar"><i data-w="${x.p/x.max*100}"></i></div><p>${x.d}</p></div>`).join("");
+  requestAnimationFrame(()=>$$("#factors .bar i").forEach(i=>i.style.width=i.dataset.w+"%"));
+  const txt=`My Solana wallet scored ${score}/100 on the QSHIELD Quantum Exposure Score (${band[0].toLowerCase()} exposure). Check yours before q-day.`;
+  $("#shareX").href="https://x.com/intent/post?text="+encodeURIComponent(txt);
+  $("#copyScore").onclick=async()=>{try{await navigator.clipboard.writeText(txt);toast("Result copied.")}catch(e){toast(txt)}};
+  btn.disabled=false;btn.textContent="Scan";
+}
+
+/* ================= WINTERNITZ DEMO ================= */
+const chainsEl=$("#chains");for(let i=0;i<67;i++)chainsEl.appendChild(document.createElement("i"));
+const bars=[...chainsEl.children];const enc=new TextEncoder();
+let wk=null,wsig=null;
+const cat=arrs=>{const o=new Uint8Array(arrs.length*32);arrs.forEach((a,i)=>o.set(a,i*32));return o};
+async function chain(x,n){for(let i=0;i<n;i++)x=await sha(x);return x}
+function digits(h){const d=[];for(const b of h){d.push(b>>4,b&15)}let cs=d.reduce((a,x)=>a+(15-x),0);d.push((cs>>8)&15,(cs>>4)&15,cs&15);return d}
+const out=(h)=>$("#wOut").innerHTML=h;
+$("#wGen").onclick=async()=>{out("Generating 67 secrets and walking each chain 15 steps…");
+  const sk=[...Array(67)].map(()=>crypto.getRandomValues(new Uint8Array(32)));
+  const pk=await Promise.all(sk.map(s=>chain(s,15)));const root=await sha(cat(pk));
+  wk={sk,root,used:false};wsig=null;bars.forEach(b=>{b.style.height="100%";b.classList.remove("lit")});
+  out(`Public key (hash of all 67 chain ends):<br><span class="ok">${hex(root)}</span>`);
+  $("#wSign").disabled=false;$("#wVer").disabled=true;$("#wTamper").disabled=true};
+$("#wSign").onclick=async()=>{if(!wk)return;
+  const reuse=wk.used;const d=digits(await sha(enc.encode($("#wMsg").value)));
+  wsig={msg:$("#wMsg").value,parts:await Promise.all(wk.sk.map((s,i)=>chain(s,d[i])))};wk.used=true;
+  bars.forEach((b,i)=>{b.style.height=(8+92*d[i]/15)+"%";b.classList.add("lit")});
+  out(`${reuse?'<span class="bad">This key already signed once. Reusing it reveals more of each chain. A vault would refuse and rotate.</span><br>':""}Signed. Each bar shows how far along its chain the signature reveals. Signature starts <span class="ok">${hex(wsig.parts[0]).slice(0,32)}…</span> (${67*32} bytes)`);
+  $("#wVer").disabled=false;$("#wTamper").disabled=false};
+async function verify(msg){const d=digits(await sha(enc.encode(msg)));const ends=await Promise.all(wsig.parts.map((s,i)=>chain(s,15-d[i])));return hex(await sha(cat(ends)))===hex(wk.root)}
+$("#wVer").onclick=async()=>{const ok=await verify(wsig.msg);out(ok?`<span class="ok">Valid.</span> Finishing every chain lands exactly on the public key for “${wsig.msg.replace(/</g,"&lt;")}”.`:'<span class="bad">Invalid.</span>')};
+$("#wTamper").onclick=async()=>{const m=wsig.msg+" ";const ok=await verify(m);out(ok?'<span class="bad">Unexpected: valid.</span>':`<span class="bad">Rejected.</span> Changing the message by one character moves the chain positions, so the ends no longer match the public key.`)};
+
+/* ================= AUTO-MIGRATION ================= */
+const trigTxt={critical:"Sentinel raises the network to Critical",high:"Sentinel raises the network to High",canary:"my canary key is spent",manual:"I confirm it myself"};
+function pressGroup(sel,multi,cb){$$(sel+" .choice").forEach(b=>b.onclick=()=>{if(multi)b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true");else $$(sel+" .choice").forEach(x=>x.setAttribute("aria-pressed",x===b));cb&&cb()})}
+function policy(){return{trigger:$("#pTrig").value,assets:$$("#pAssets .choice[aria-pressed=true]").map(b=>b.dataset.v),cap:+$("#pCap").value,cooldownHours:+$("#pCool").value}}
+function renderPolicy(){const p=policy();$("#pCapV").textContent=p.cap+"%";
+  const as=p.assets.length?p.assets.join(", ").replace("SPL","other SPL tokens"):"nothing yet";
+  $("#pSum").innerHTML=`When <em>${trigTxt[p.trigger]}</em>, move up to <em>${p.cap}%</em> of my <em>${as}</em> into my own QSHIELD vault, at most once every <em>${p.cooldownHours} hours</em>. Funds can't go anywhere else.`}
+pressGroup("#pAssets",true,renderPolicy);["#pTrig","#pCap","#pCool"].forEach(s=>$(s).addEventListener("input",renderPolicy));renderPolicy();
+const saved=store.get("qs_policy");if(saved)$("#pStatus").textContent=`Rule signed for ${short(saved.wallet)}. Signature ${saved.sig.slice(0,12)}…`;
+$("#pSign").onclick=async()=>{if(!wallet.pubkey)return openModal();const p=policy();if(!p.assets.length)return toast("Choose at least one asset.");
+  const msg=`QSHIELD auto-migration rule\nwallet: ${wallet.pubkey}\n${JSON.stringify(p)}\nissued: ${new Date().toISOString()}`;
+  try{const sig=await signText(msg);store.set("qs_policy",{wallet:wallet.pubkey,sig,p});$("#pStatus").textContent=`Rule signed. Signature ${sig.slice(0,12)}…`;toast("Rule signed.")}
+  catch(e){if(e.message!=="not connected")toast(e?.code===4001?"Signing was declined.":e.message||"Couldn't sign.")}};
+
+/* ================= LAUNCH ================= */
+let imgURL=null;
+function setImg(file){if(!file||!file.type.startsWith("image/"))return;const r=new FileReader();r.onload=()=>{imgURL=r.result;$("#dropThumb").innerHTML=`<img src="${imgURL}" alt="">`;$("#cThumb").innerHTML=`<img src="${imgURL}" alt="">`};r.readAsDataURL(file)}
+$("#lImg").onchange=e=>setImg(e.target.files[0]);
+const drop=$("#drop");["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor="#888"}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.borderColor=""}));drop.addEventListener("drop",e=>setImg(e.dataTransfer.files[0]));
+pressGroup("#lBuy",false,renderCoin);
+function cfg(){return{name:$("#lName").value.trim(),ticker:$("#lTick").value.trim().replace(/^\$/,"").toUpperCase(),description:$("#lDesc").value.trim(),supply:+$("#lSupply").value,treasuryPct:+$("#lTreas").value,
+  revokeMint:$("#tMint").checked,revokeFreeze:$("#tFreeze").checked,feesToVault:$("#tFees").checked,holderScans:$("#tHolders").checked,firstBuySol:+($("#lBuy .choice[aria-pressed=true]")?.dataset.v||0)}}
+const shipIcon='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z"/></svg>';
+function renderCoin(){const c=cfg();$("#lTreasV").textContent=c.treasuryPct+"%";
+  $("#cName").textContent=c.name||"Your coin";$("#cTick").textContent="$"+(c.ticker||"TICKER");
+  let s=15;if(c.revokeMint)s+=20;if(c.revokeFreeze)s+=15;s+=Math.round(Math.min(c.treasuryPct,10)*2);if(c.feesToVault)s+=15;if(c.holderScans)s+=15;s=Math.min(100,s);
+  $("#cScore").textContent=s;$("#cArc").style.strokeDashoffset=106.8*(1-s/100);
+  const items=[[true,"Post-quantum dev identity","One-time hash-based keys under a merkle root, written on chain"],
+    [c.revokeMint,"Mint authority revoked","Supply is fixed at "+c.supply.toLocaleString()],[c.revokeFreeze,"Freeze authority revoked","Holders can't be frozen"],
+    [c.treasuryPct>0,"Treasury vault",c.treasuryPct?`${c.treasuryPct}% of supply behind a Winternitz key`:"No treasury allocation"],
+    [c.feesToVault,"Fee sweep","Creator fees go straight into the vault"],[c.holderScans,"Holder shield","Top 100 holders get free scans"]];
+  $("#ships").innerHTML=items.map(([on,b,s])=>`<div class="ship ${on?"on":""}"><span class="ic">${shipIcon}</span><span><b>${b}</b><small>${s}</small></span></div>`).join("");
+  if(c.description)$("#cDesc").textContent=c.description;else $("#cDesc").textContent="Readiness score updates as you choose. Holders see it on the coin page.";
+}
+["#lName","#lTick","#lDesc","#lSupply","#lTreas","#tMint","#tFreeze","#tFees","#tHolders"].forEach(s=>$(s).addEventListener("input",renderCoin));renderCoin();
+// hold to launch
+const hold=$("#holdBtn"),fill=$("#holdFill");let hStart=0,hRaf=0,busy=false;const HOLD=1200;
+function hBegin(e){if(busy)return;if(e&&e.type==="keydown"){if(e.repeat||(e.key!==" "&&e.key!=="Enter"))return;e.preventDefault()}
+  const c=cfg();if(!c.name||!c.ticker){toast("Add a name and ticker first.");(c.name?$("#lTick"):$("#lName")).focus();return}
+  if(!wallet.pubkey){openModal();return}
+  hStart=performance.now();const step=t=>{const k=Math.min(1,(t-hStart)/HOLD);fill.style.transform=`scaleX(${k})`;if(k<1)hRaf=requestAnimationFrame(step);else launch()};hRaf=requestAnimationFrame(step)}
+function hEnd(){if(busy)return;cancelAnimationFrame(hRaf);fill.style.transition="transform .25s";fill.style.transform="scaleX(0)";setTimeout(()=>fill.style.transition="",260)}
+hold.addEventListener("pointerdown",hBegin);hold.addEventListener("pointerup",hEnd);hold.addEventListener("pointerleave",hEnd);hold.addEventListener("keydown",hBegin);hold.addEventListener("keyup",hEnd);
+hold.addEventListener("click",e=>e.preventDefault());
+async function launch(){busy=true;$("#holdLabel").textContent="Check your wallet…";
+  const c=cfg();const manifest={protocol:"QSHIELD shielded launch v0",creator:wallet.pubkey,...c,image:imgURL?"attached":null,issued:new Date().toISOString()};
+  const json=JSON.stringify(manifest,null,1);
+  try{const sig=await signText(json);const mh=hex(await sha(enc.encode(json)));
+    store.set("qs_launch",{manifest,sig,mh});
+    $("#lDone").innerHTML=`<b style="font-weight:500">$${c.ticker} manifest signed.</b><p class="note" style="margin:6px 0 12px">Your launch settings are signed by your wallet.</p><dl class="report" style="margin:0"><dt>manifest sha-256</dt><dd>${mh}</dd><dt>creator</dt><dd>${short(wallet.pubkey)}</dd><dt>signature</dt><dd>${sig.slice(0,44)}…</dd><dt>readiness</dt><dd>${$("#cScore").textContent} / 100</dd></dl>`;
+    $("#lDone").classList.add("show");$("#holdLabel").textContent="Signed";toast(`$${c.ticker} launch manifest signed.`);
+    setTimeout(()=>{busy=false;hEnd();updateWalletUI()},1800)}
+  catch(e){busy=false;hEnd();updateWalletUI();if(e.message!=="not connected")toast(e?.code===4001?"Signing was declined.":e.message||"Couldn't sign.")}}
+
+/* ================= AUDIT REQUEST ================= */
+const req=()=>toast("To request an audit, message QSHIELD on X.");$("#auditReq").onclick=req;$("#auditReq2").onclick=req;
+
+/* ================= FLYWHEEL ================= */
+(function wheel(){const svg=$("#wheel"),N=8,cx=280,cy=280,R=168;const labs=$$("#wheelList li").map(l=>l.textContent);
+  const short8=["Protection","Adoption","Fees","Revenue","Buybacks","Burn","Development","Better tools"];
+  let html=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#2a2a2a" stroke-width="1"/><circle cx="${cx}" cy="${cy}" r="${R-26}" fill="none" stroke="#1d1d1d" stroke-dasharray="2 6"/>`;
+  html+=`<text x="${cx}" y="${cy-6}" text-anchor="middle" style="font-family:Michroma,sans-serif;font-size:22px;fill:#f2f2f0;letter-spacing:3px">$QSHIELD</text><text x="${cx}" y="${cy+20}" text-anchor="middle">security pays for security</text>`;
+  for(let i=0;i<N;i++){const a=-Math.PI/2+i*2*Math.PI/N,x=cx+R*Math.cos(a),y=cy+R*Math.sin(a);const lx=cx+(R+0)*Math.cos(a),ly=cy+(R+0)*Math.sin(a);
+    const tx=x+Math.cos(a)*44,ty=y+Math.sin(a)*44+4;const anchor=Math.abs(Math.cos(a))<.2?"middle":Math.cos(a)>0?"start":"end";
+    html+=`<g class="node" data-i="${i}"><rect x="${x-14}" y="${y-14}" width="28" height="28" rx="4"/><text class="num" x="${x}" y="${y+4}" text-anchor="middle">${i+1}</text><text class="lab" x="${Math.abs(Math.cos(a))<.2?x:x+Math.cos(a)*24}" y="${Math.abs(Math.cos(a))<.2?y+Math.sin(a)*32+4:y+4}" text-anchor="${anchor}">${short8[i]}</text><title>${labs[i]}</title></g>`}
+  svg.innerHTML=html;const nodes=$$("#wheel .node"),lis=$$("#wheelList li");let i=0;
+  const set=k=>{nodes.forEach((n,j)=>n.classList.toggle("on",j===k));lis.forEach((l,j)=>l.classList.toggle("on",j===k))};set(0);
+  let tm=null;const go=()=>{if(!reduce)tm=setInterval(()=>{i=(i+1)%N;set(i)},1700)};
+  new IntersectionObserver(es=>{clearInterval(tm);if(es[0].isIntersecting)go()}).observe(svg);
+  [...nodes,...lis].forEach((el,j)=>el.addEventListener("mouseenter",()=>{clearInterval(tm);i=j%N;set(i)}));
+})();
+
+updateWalletUI();
+if(matchMedia("(hover: none)").matches)$("#hint").textContent="tap the shield to pulse";
+})();
+</script>
+</body>
+</html>
